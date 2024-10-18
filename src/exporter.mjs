@@ -59,6 +59,7 @@ export class WordPressExporter {
     await this.fetchAuthors();
     await this.fetchCategories();
     await this.fetchPosts();
+
     console.log('Data successfully exported from Wordpress!');
 
     await this.commitAndPush();
@@ -316,9 +317,7 @@ export class WordPressExporter {
     };
 
     for (let page = 1; page <= totalPages; page++) {
-      setTimeout(async () => {
-        await importData(page);
-      }, 100);
+      await importData(page);
     }
   }
 
