@@ -6,26 +6,35 @@ import * as cheerio from 'cheerio';
 import { downloadImage, convertEscapedAscii, stripHtml } from './utils.mjs';
 
 export class WordPressExporter {
-  apiUrl = null;
-  dataDirectory = path.resolve(process.cwd(), 'data');
-  categoriesFile = path.resolve(this.dataDirectory, 'categories.json');
-  authorsDirectory = path.resolve(this.dataDirectory, 'authors');
-  authorsFile = path.resolve(this.authorsDirectory, 'authors.json');
+  blogName;
+  apiUrl;
 
-  authorsUrl = null;
-  categoriesUrl = null;
-  postsUrl = null;
-  tagsUrl = null;
-  mediaUrl = null;
+  dataDirectory;
+  categoriesFile;
+  authorsDirectory;
+  authorsFile;
+
+  authorsUrl;
+  categoriesUrl;
+  postsUrl;
+  tagsUrl;
+  mediaUrl;
 
   imagesNotDownloaded = [];
 
-  constructor(apiUrl) {
-    if (!apiUrl) {
-      throw new Error('Missing required parameter: apiUrl');
+  constructor(blogName, apiUrl) {
+    if (!blogName || !apiUrl) {
+      throw new Error('Missing required parameters: apiUrl or blogName');
     }
 
+    this.blogName = blogName;
     this.apiUrl = apiUrl;
+
+    this.dataDirectory = path.resolve(process.cwd(), '_archive', blogName);
+    this.categoriesFile = path.resolve(this.dataDirectory, 'categories.json');
+    this.authorsDirectory = path.resolve(this.dataDirectory, 'authors');
+    this.authorsFile = path.resolve(this.authorsDirectory, 'authors.json');
+
     this.authorsUrl = `${apiUrl}users`;
     this.categoriesUrl = `${apiUrl}categories`;
     this.postsUrl = `${apiUrl}posts`;
@@ -33,7 +42,7 @@ export class WordPressExporter {
     this.mediaUrl = `${apiUrl}media`;
 
     if (!fs.existsSync(this.dataDirectory)) {
-      fs.mkdirSync(this.dataDirectory);
+      fs.mkdirSync(this.dataDirectory, { recursive: true });
     }
   }
 
@@ -43,7 +52,6 @@ export class WordPressExporter {
     await this.fetchAuthors();
     await this.fetchCategories();
     await this.fetchPosts();
-
 
     if (this.imagesNotDownloaded.length > 0) {
       console.log('The following images could not be downloaded:');
