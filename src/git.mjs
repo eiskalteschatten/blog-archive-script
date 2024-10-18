@@ -34,11 +34,9 @@ export class Git {
     const commitMessage = 'Nightly archive update';
     const files = this.readFilesRecursively(this.dataDirectory);
     const batchSize = 50;
-    const totalBatches = Math.ceil(files.length / batchSize);
 
     for (let i = 0; i < files.length; i += batchSize) {
       const batch = files.slice(i, i + batchSize);
-      const batchNumber = Math.floor(i / batchSize) + 1;
 
       for (const file of batch) {
         try {
@@ -50,10 +48,8 @@ export class Git {
       }
 
       try {
-        await this.executeGitCommand(`git commit -m "${commitMessage} - batch ${batchNumber} of ${totalBatches}"`);
+        await this.executeGitCommand(`git commit -m "${commitMessage}"`);
         await this.executeGitCommand('git push');
-
-        console.log(`Batch ${batchNumber} of ${totalBatches} for ${this.blogName} successfully pushed to GitHub!`);
       }
       catch (error) {
         console.error(error);
