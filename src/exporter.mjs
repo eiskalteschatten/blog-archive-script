@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import TurndownService from 'turndown';
 import * as cheerio from 'cheerio';
-import { Octokit } from 'octokit';
 
 import { downloadImage, convertEscapedAscii, stripHtml } from './utils.mjs';
 import { Git } from './git.mjs';
@@ -29,10 +28,6 @@ export class WordPressExporter {
   constructor(blogName, apiUrl, repoName) {
     if (!blogName || !apiUrl || !repoName) {
       throw new Error('Missing required parameters.');
-    }
-
-    if (!process.env.GITHUB_ACCESS_TOKEN) {
-      throw new Error('No GitHub access token provided.');
     }
 
     this.blogName = blogName;
@@ -67,7 +62,6 @@ export class WordPressExporter {
 
     console.log('Data successfully exported from Wordpress!');
 
-    // await this.commitAndPush();
     await this.git.commitPush();
 
     if (this.imagesNotDownloaded.length > 0) {
@@ -331,95 +325,5 @@ export class WordPressExporter {
     const response = await fetch(`${this.tagsUrl}/${tagId}`);
     const tag = await response.json();
     return tag.name;
-  }
-
-  async commitAndPush() {
-    const branch = 'main';
-    const repo = this.gitHubRepo;
-    const commitMessage = 'Nightly archive update';
-
-    console.log(`Committing and pushing ${this.blogName} to GitHub...`);
-
-    const octokit = new Octokit({ auth: process.env.GITHUB_ACCESS_TOKEN });
-
-    const { data: { login } } = await octokit.rest.users.getAuthenticated();
-    console.log('Authenticated as:', login);
-    const owner = login;
-
-    const { data: refData } = await octokit.rest.git.getRef({
-      owner,
-      repo,
-      ref: `heads/${branch}`,
-    });
-
-    let latestCommitSha = refData.object.sha;
-
-    const readFilesRecursively = dir => {
-      let results = [];
-      const list = fs.readdirSync(dir);
-
-      list.forEach(file => {
-        const filePath = path.join(dir, file);
-        const stat = fs.statSync(filePath);
-
-        if (stat && stat.isDirectory()) {
-          results = results.concat(readFilesRecursively(filePath));
-        }
-        else {
-          results.push(filePath);
-        }
-      });
-
-      return results;
-    }
-
-    const files = readFilesRecursively(this.dataDirectory);
-    const batchSize = 50;
-    const totalBatches = Math.ceil(files.length / batchSize);
-
-    for (let i = 0; i < files.length; i += batchSize) {
-      const batch = files.slice(i, i + batchSize);
-      const batchNumber = Math.floor(i / batchSize) + 1;
-
-      const tree = batch.map(file => {
-        const content = fs.readFileSync(file, 'utf8');
-        return {
-          path: path.relative(this.dataDirectory, file),
-          mode: '100644',
-          type: 'blob',
-          content: content,
-        };
-      });
-
-      const { data: treeData } = await octokit.rest.git.createTree({
-        owner,
-        repo,
-        base_tree: latestCommitSha,
-        tree,
-      });
-
-      const newTreeSha = treeData.sha;
-
-      const { data: newCommitData } = await octokit.rest.git.createCommit({
-        owner,
-        repo,
-        message: `${commitMessage} - batch ${batchNumber} of ${totalBatches}`,
-        tree: newTreeSha,
-        parents: [latestCommitSha],
-      });
-
-      latestCommitSha = newCommitData.sha;
-
-      await octokit.rest.git.updateRef({
-        owner,
-        repo,
-        ref: `heads/${branch}`,
-        sha: latestCommitSha,
-      });
-
-      console.log(`Batch ${batchNumber} of ${totalBatches} for ${this.blogName} successfully pushed to GitHub!`);
-    }
-
-    console.log('Archive successfully pushed to GitHub!');
   }
 }

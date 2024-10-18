@@ -1,5 +1,3 @@
-import 'dotenv/config';
-
 import { WordPressExporter } from './exporter.mjs';
 
 const blogUrls = [
@@ -12,4 +10,5 @@ const blogUrls = [
 for (const [blogName, apiUrl, repoName] of blogUrls) {
   const exporter = new WordPressExporter(blogName, apiUrl, repoName);
   await exporter.export();
+  console.log('------------');
 }
