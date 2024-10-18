@@ -331,7 +331,7 @@ export class WordPressExporter {
     const repo = this.gitHubRepo;
     const commitMessage = 'Nightly archive update';
 
-    console.log('Committing and pushing to GitHub...');
+    console.log(`Committing and pushing ${this.blogName} to GitHub...`);
 
     const octokit = new Octokit({ auth: process.env.GITHUB_ACCESS_TOKEN });
 
