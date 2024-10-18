@@ -8,6 +8,7 @@ import { downloadImage, convertEscapedAscii, stripHtml } from './utils.mjs';
 export class WordPressExporter {
   blogName;
   apiUrl;
+  gitHubRepo;
 
   dataDirectory;
   categoriesFile;
@@ -22,9 +23,9 @@ export class WordPressExporter {
 
   imagesNotDownloaded = [];
 
-  constructor(blogName, apiUrl) {
-    if (!blogName || !apiUrl) {
-      throw new Error('Missing required parameters: apiUrl or blogName');
+  constructor(blogName, apiUrl, gitHubRepo) {
+    if (!blogName || !apiUrl || !gitHubRepo) {
+      throw new Error('Missing required parameters.');
     }
 
     this.blogName = blogName;
@@ -52,6 +53,7 @@ export class WordPressExporter {
     await this.fetchAuthors();
     await this.fetchCategories();
     await this.fetchPosts();
+    await this.commitAndPush();
 
     if (this.imagesNotDownloaded.length > 0) {
       console.log('The following images could not be downloaded:');
@@ -314,5 +316,9 @@ export class WordPressExporter {
     const response = await fetch(`${this.tagsUrl}/${tagId}`);
     const tag = await response.json();
     return tag.name;
+  }
+
+  async commitAndPush() {
+
   }
 }
