@@ -316,7 +316,9 @@ export class WordPressExporter {
     };
 
     for (let page = 1; page <= totalPages; page++) {
-      await importData(page);
+      setTimeout(async () => {
+        await importData(page);
+      }, 100);
     }
   }
 
