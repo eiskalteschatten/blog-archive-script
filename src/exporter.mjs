@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import TurndownService from 'turndown';
 import * as cheerio from 'cheerio';
+import { Octokit } from 'octokit';
 
 import { downloadImage, convertEscapedAscii, stripHtml } from './utils.mjs';
 
@@ -28,6 +29,10 @@ export class WordPressExporter {
       throw new Error('Missing required parameters.');
     }
 
+    if (!process.env.GITHUB_ACCESS_TOKEN) {
+      throw new Error('No GitHub access token provided.');
+    }
+
     this.blogName = blogName;
     this.apiUrl = apiUrl;
 
@@ -48,11 +53,13 @@ export class WordPressExporter {
   }
 
   async export() {
-    console.log('Exporting data from Wordpress...');
+    console.log(`Exporting data from Wordpress for ${this.blogName}...`);
 
-    await this.fetchAuthors();
-    await this.fetchCategories();
-    await this.fetchPosts();
+    // await this.fetchAuthors();
+    // await this.fetchCategories();
+    // await this.fetchPosts();
+    console.log('Data successfully exported from Wordpress!');
+
     await this.commitAndPush();
 
     if (this.imagesNotDownloaded.length > 0) {
@@ -60,7 +67,7 @@ export class WordPressExporter {
       console.log(JSON.stringify(this.imagesNotDownloaded, null, 2));
     }
 
-    console.log('Data successfully exported from Wordpress!');
+    console.log('Finished archiving', this.blogName);
   }
 
   async fetchAuthors() {
@@ -319,6 +326,91 @@ export class WordPressExporter {
   }
 
   async commitAndPush() {
+    const branch = 'main';
+    const owner = 'Alex Seifert';
+    const repo = this.gitHubRepo;
+    const commitMessage = 'Nightly archive update';
 
+    console.log('Committing and pushing to GitHub...');
+
+    const octokit = new Octokit({ auth: process.env.GITHUB_ACCESS_TOKEN });
+
+    const { data: { login } } = await octokit.rest.users.getAuthenticated();
+    console.log('Authenticated as:', login);
+
+    const { data: refData } = await octokit.rest.git.getRef({
+      owner,
+      repo,
+      ref: `heads/${branch}`,
+    });
+
+    const latestCommitSha = refData.object.sha;
+
+    const { data: commitData } = await octokit.rest.git.getCommit({
+      owner,
+      repo,
+      commit_sha: latestCommitSha,
+    });
+
+    const baseTreeSha = commitData.tree.sha;
+
+    const readFilesRecursively = dir => {
+      let results = [];
+      const list = fs.readdirSync(dir);
+
+      list.forEach(file => {
+        const filePath = path.join(dir, file);
+        const stat = fs.statSync(filePath);
+
+        if (stat && stat.isDirectory()) {
+          results = results.concat(readFilesRecursively(filePath));
+        }
+        else {
+          results.push(filePath);
+        }
+      });
+
+      return results;
+    }
+
+    const files = readFilesRecursively(this.dataDirectory);
+
+    const tree = files.map(file => {
+      const content = fs.readFileSync(file, 'utf8');
+      return {
+        path: path.relative(this.dataDirectory, file),
+        mode: '100644',
+        type: 'blob',
+        content: content,
+      };
+    });
+
+    const { data: treeData } = await octokit.rest.git.createTree({
+      owner,
+      repo,
+      base_tree: baseTreeSha,
+      tree,
+    });
+
+    const newTreeSha = treeData.sha;
+
+    const { data: newCommitData } = await octokit.rest.git.createCommit({
+      owner,
+      repo,
+      message: commitMessage,
+      tree: newTreeSha,
+      parents: [latestCommitSha],
+    });
+
+    const newCommitSha = newCommitData.sha;
+
+    await octokit.rest.git.updateRef({
+      owner,
+      repo,
+      ref: `heads/${branch}`,
+      sha: newCommitSha,
+    });
+
+    console.log('Archive successfully pushed to GitHub!');
   }
 }
