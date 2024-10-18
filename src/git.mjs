@@ -14,7 +14,7 @@ export class Git {
 
     this.repoName = repoName;
     this.repoRootDirectory = path.join(process.cwd(), '..', repoName);
-    this.dataDirectory = path.join(this.repoRootDirectory, 'archive');
+    this.dataDirectory = path.join(this.repoRootDirectory, 'blog');
   }
 
   async pull() {
