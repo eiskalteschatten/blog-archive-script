@@ -233,7 +233,7 @@ export class WordPressExporter {
         $(caption).removeAttr('class');
       }
 
-      $('.wp-polls').html('<em>Polls have been temporarily removed while we migrate to a new platform.</em>');
+      $('.wp-polls').html('<em>There used to be a poll here, but had to be removed for this Markdown file because it relied on a WordPress plugin.</em>');
       $('.wp-polls-loading').remove();
 
       return $.html();
