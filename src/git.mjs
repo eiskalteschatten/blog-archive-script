@@ -76,7 +76,7 @@ export class Git {
     });
   }
 
-  readFilesRecursively = dir => {
+  readFilesRecursively(dir) {
     let results = [];
     const list = fs.readdirSync(dir);
 
