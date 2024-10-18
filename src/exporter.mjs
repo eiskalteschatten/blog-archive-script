@@ -55,9 +55,9 @@ export class WordPressExporter {
   async export() {
     console.log(`Exporting data from Wordpress for ${this.blogName}...`);
 
-    // await this.fetchAuthors();
-    // await this.fetchCategories();
-    // await this.fetchPosts();
+    await this.fetchAuthors();
+    await this.fetchCategories();
+    await this.fetchPosts();
     console.log('Data successfully exported from Wordpress!');
 
     await this.commitAndPush();
