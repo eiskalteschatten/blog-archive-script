@@ -347,15 +347,7 @@ export class WordPressExporter {
       ref: `heads/${branch}`,
     });
 
-    const latestCommitSha = refData.object.sha;
-
-    const { data: commitData } = await octokit.rest.git.getCommit({
-      owner,
-      repo,
-      commit_sha: latestCommitSha,
-    });
-
-    const baseTreeSha = commitData.tree.sha;
+    let latestCommitSha = refData.object.sha;
 
     const readFilesRecursively = dir => {
       let results = [];
@@ -377,42 +369,51 @@ export class WordPressExporter {
     }
 
     const files = readFilesRecursively(this.dataDirectory);
+    const batchSize = 50;
+    const totalBatches = Math.ceil(files.length / batchSize);
 
-    const tree = files.map(file => {
-      const content = fs.readFileSync(file, 'utf8');
-      return {
-        path: path.relative(this.dataDirectory, file),
-        mode: '100644',
-        type: 'blob',
-        content: content,
-      };
-    });
+    for (let i = 0; i < files.length; i += batchSize) {
+      const batch = files.slice(i, i + batchSize);
+      const batchNumber = Math.floor(i / batchSize) + 1;
 
-    const { data: treeData } = await octokit.rest.git.createTree({
-      owner,
-      repo,
-      base_tree: baseTreeSha,
-      tree,
-    });
+      const tree = batch.map(file => {
+        const content = fs.readFileSync(file, 'utf8');
+        return {
+          path: path.relative(this.dataDirectory, file),
+          mode: '100644',
+          type: 'blob',
+          content: content,
+        };
+      });
 
-    const newTreeSha = treeData.sha;
+      const { data: treeData } = await octokit.rest.git.createTree({
+        owner,
+        repo,
+        base_tree: latestCommitSha,
+        tree,
+      });
 
-    const { data: newCommitData } = await octokit.rest.git.createCommit({
-      owner,
-      repo,
-      message: commitMessage,
-      tree: newTreeSha,
-      parents: [latestCommitSha],
-    });
+      const newTreeSha = treeData.sha;
 
-    const newCommitSha = newCommitData.sha;
+      const { data: newCommitData } = await octokit.rest.git.createCommit({
+        owner,
+        repo,
+        message: `${commitMessage} - batch ${batchNumber} of ${totalBatches}`,
+        tree: newTreeSha,
+        parents: [latestCommitSha],
+      });
 
-    await octokit.rest.git.updateRef({
-      owner,
-      repo,
-      ref: `heads/${branch}`,
-      sha: newCommitSha,
-    });
+      latestCommitSha = newCommitData.sha;
+
+      await octokit.rest.git.updateRef({
+        owner,
+        repo,
+        ref: `heads/${branch}`,
+        sha: latestCommitSha,
+      });
+
+      console.log(`Batch ${batchNumber} of ${totalBatches} for ${this.blogName} successfully pushed to GitHub!`);
+    }
 
     console.log('Archive successfully pushed to GitHub!');
   }
