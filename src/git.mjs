@@ -4,7 +4,8 @@ import fs from 'node:fs';
 
 export class Git {
   repoName;
-  repoDirectory;
+  repoRootDirectory;
+  dataDirectory;
 
   constructor(repoName) {
     if (!repoName) {
@@ -12,7 +13,8 @@ export class Git {
     }
 
     this.repoName = repoName;
-    this.repoDirectory = path.join(process.cwd(), '..', repoName);
+    this.repoRootDirectory = path.join(process.cwd(), '..', repoName);
+    this.dataDirectory = path.join(this.repoRootDirectory, 'archive');
   }
 
   async pull() {
@@ -30,7 +32,7 @@ export class Git {
     console.log(`Committing and pushing ${this.repoName}...`);
 
     const commitMessage = 'Nightly archive update';
-    const files = this.readFilesRecursively(this.repoDirectory);
+    const files = this.readFilesRecursively(this.dataDirectory);
     const batchSize = 50;
     const totalBatches = Math.ceil(files.length / batchSize);
 
@@ -40,6 +42,7 @@ export class Git {
 
       for (const file of batch) {
         try {
+          console.log(`Adding ${file}...`);
           await this.executeGitCommand(`git add ${file}`);
         }
         catch (error) {
@@ -63,7 +66,7 @@ export class Git {
 
   async executeGitCommand(command) {
     return new Promise((resolve, reject) => {
-      exec(command, { cwd: this.repoDirectory }, (error, stdout, stderr) => {
+      exec(command, { cwd: this.repoRootDirectory }, (error, stdout, stderr) => {
         if (error) {
           reject(`Error: ${stderr}`);
         }
