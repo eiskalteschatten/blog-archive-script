@@ -5,11 +5,13 @@ import * as cheerio from 'cheerio';
 import { Octokit } from 'octokit';
 
 import { downloadImage, convertEscapedAscii, stripHtml } from './utils.mjs';
+import { Git } from './git.mjs';
 
 export class WordPressExporter {
   blogName;
   apiUrl;
-  gitHubRepo;
+  repoName;
+  git;
 
   dataDirectory;
   categoriesFile;
@@ -24,8 +26,8 @@ export class WordPressExporter {
 
   imagesNotDownloaded = [];
 
-  constructor(blogName, apiUrl, gitHubRepo) {
-    if (!blogName || !apiUrl || !gitHubRepo) {
+  constructor(blogName, apiUrl, repoName) {
+    if (!blogName || !apiUrl || !repoName) {
       throw new Error('Missing required parameters.');
     }
 
@@ -35,9 +37,9 @@ export class WordPressExporter {
 
     this.blogName = blogName;
     this.apiUrl = apiUrl;
-    this.gitHubRepo = gitHubRepo;
+    this.repoName = repoName;
 
-    this.dataDirectory = path.resolve(process.cwd(), '_archive', blogName);
+    this.dataDirectory = path.resolve(process.cwd(), '..', repoName);
     this.categoriesFile = path.resolve(this.dataDirectory, 'categories.json');
     this.authorsDirectory = path.resolve(this.dataDirectory, 'authors');
     this.authorsFile = path.resolve(this.authorsDirectory, 'authors.json');
@@ -48,6 +50,8 @@ export class WordPressExporter {
     this.tagsUrl = `${apiUrl}tags`;
     this.mediaUrl = `${apiUrl}media`;
 
+    this.git = new Git(repoName);
+
     if (!fs.existsSync(this.dataDirectory)) {
       fs.mkdirSync(this.dataDirectory, { recursive: true });
     }
@@ -56,13 +60,15 @@ export class WordPressExporter {
   async export() {
     console.log(`Exporting data from Wordpress for ${this.blogName}...`);
 
+    await this.git.pull();
     await this.fetchAuthors();
     await this.fetchCategories();
     await this.fetchPosts();
 
     console.log('Data successfully exported from Wordpress!');
 
-    await this.commitAndPush();
+    // await this.commitAndPush();
+    await this.git.commitPush();
 
     if (this.imagesNotDownloaded.length > 0) {
       console.log('The following images could not be downloaded:');
