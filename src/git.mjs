@@ -42,7 +42,6 @@ export class Git {
 
       for (const file of batch) {
         try {
-          console.log(`Adding ${file}...`);
           await this.executeGitCommand(`git add ${file}`);
         }
         catch (error) {
