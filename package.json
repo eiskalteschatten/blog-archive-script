@@ -1,0 +1,29 @@
+{
+  "name": "blog-archive-script",
+  "version": "1.0.0",
+  "description": "This is a script that imports WordPress posts and their images to Markdown files.",
+  "main": "index.mjs",
+  "scripts": {
+    "start": "node src/index.mjs",
+    "lint": "eslint \"./**/*.{js,json}\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eiskalteschatten/blog-archive-script.git"
+  },
+  "author": "Alex Seifert",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/eiskalteschatten/blog-archive-script/issues"
+  },
+  "homepage": "https://github.com/eiskalteschatten/blog-archive-script#readme",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "turndown": "^7.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-promise": "^6.2.0"
+  }
+}
