@@ -328,7 +328,6 @@ export class WordPressExporter {
 
   async commitAndPush() {
     const branch = 'main';
-    const owner = 'Alex Seifert';
     const repo = this.gitHubRepo;
     const commitMessage = 'Nightly archive update';
 
@@ -338,6 +337,7 @@ export class WordPressExporter {
 
     const { data: { login } } = await octokit.rest.users.getAuthenticated();
     console.log('Authenticated as:', login);
+    const owner = login;
 
     const { data: refData } = await octokit.rest.git.getRef({
       owner,
