@@ -35,6 +35,7 @@ export class WordPressExporter {
 
     this.blogName = blogName;
     this.apiUrl = apiUrl;
+    this.gitHubRepo = gitHubRepo;
 
     this.dataDirectory = path.resolve(process.cwd(), '_archive', blogName);
     this.categoriesFile = path.resolve(this.dataDirectory, 'categories.json');
