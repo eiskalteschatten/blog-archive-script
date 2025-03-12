@@ -5,6 +5,7 @@ const blogUrls = [
   ['hauntingalex', 'https://haunting.alexseifert.com/wp-json/wp/v2/', 'blog-archive-hauntingalex'],
   ['thebeskirtedman', 'https://www.the-beskirted-man.com/wp-json/wp/v2/', 'blog-archive-thebeskirtedman'],
   ['historyrhymes', 'https://www.historyrhymes.info/wp-json/wp/v2/', 'blog-archive-historyrhymes'],
+  ['systemberg', 'https://www.systemberg.com/wp-json/wp/v2/', 'blog-archive-systemberg'],
 ];
 
 for (const [blogName, apiUrl, repoName] of blogUrls) {
